@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>NFC-метки для отзывов · 2ГИС, Яндекс, MAX, Telegram</title>
+  <meta name="description" content="NFC-метки для отзывов в 2ГИС и Яндекс Картах, а также для перехода в канал MAX или Telegram. Премиальное продвижение вашего магазина.">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="NFC-метки для отзывов в 2ГИС, Яндекс Картах, MAX и Telegram">
+  <meta property="og:description" content="Одна метка — отзыв в 2ГИС или Яндексе либо переход в ваш канал MAX/Telegram. Премиальное продвижение магазина.">
+  <meta property="og:image" content="https://via.placeholder.com/1200x630/0a2a31/6ee8e8?text=NFC+Otzyvy">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="NFC Отзывы">
+  <meta property="og:locale" content="ru_RU">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="NFC-метки для отзывов в 2ГИС, Яндекс Картах, MAX и Telegram">
+  <meta name="twitter:description" content="Одна метка — отзыв в 2ГИС или Яндексе либо переход в ваш канал MAX/Telegram.">
+  <meta name="twitter:image" content="https://via.placeholder.com/1200x630/0a2a31/6ee8e8?text=NFC+Otzyvy">
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #071e24;
+      color: #e6f7f8;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      padding: clamp(1rem, 2.5vw, 2.5rem) clamp(1rem, 3vw, 2rem);
+      padding-bottom: calc(clamp(1rem, 2.5vw, 2.5rem) + env(safe-area-inset-bottom, 0px));
+      padding-top: calc(clamp(1rem, 2.5vw, 2.5rem) + env(safe-area-inset-top, 0px));
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body.tg-webapp { background-color: #071e24; }
+
+    /* ===== ФОН: лёгкий градиент без анимации и лишних слоёв ===== */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background:
+        radial-gradient(ellipse 80% 60% at 15% 5%, rgba(30, 110, 120, 0.45) 0%, transparent 60%),
+        radial-gradient(ellipse 70% 55% at 85% 10%, rgba(20, 80, 90, 0.5) 0%, transparent 60%),
+        linear-gradient(160deg, #071e24 0%, #0a2a31 40%, #061a1f 75%, #041216 100%);
+      background-color: #071e24;
+    }
+
+    /* Перламутровая текстура — упрощена до одного слоя и без мерцания */
+    .bg-texture {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.06) 0%, transparent 1px),
+        radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.04) 0%, transparent 1px);
+      background-size: 140px 140px, 100px 100px;
+      opacity: 0.45;
+    }
+
+    :root {
+      --accent: #3cd4d4;
+      --accent-soft: #6ee8e8;
+      --accent-deep: #1a9e9e;
+      --accent-glow: rgba(60, 212, 212, 0.25);
+      --accent-border: rgba(60, 212, 212, 0.4);
+      --text-light: #e6f7f8;
+      --text-muted: #8fc4c8;
+      --glass: rgba(255, 255, 255, 0.06);
+      --glass-strong: rgba(255, 255, 255, 0.1);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 2.5rem;
+      border-bottom: 1px solid var(--accent-border);
+      margin-bottom: 3.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .logo {
+      font-weight: 600;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .logo-icon {
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      background: #2e7d4e;
+      background: linear-gradient(145deg, #6ee8e8, #1a9e9e);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #071e24;
+      font-weight: 700;
+      font-size: 1.1rem;
+      line-height: 1;
+      box-shadow: 0 4px 16px rgba(60, 212, 212, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+
+    .nav {
+      display: flex;
+      gap: clamp(0.5rem, 1.5vw, 1rem);
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .nav .nav-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1.5px solid rgba(110, 232, 232, 0.4);
+      border-radius: 60px;
+      padding: 0.45rem 1.1rem;
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: background 0.25s, color 0.25s, border-color 0.25s;
+      white-space: nowrap;
+      text-decoration: none;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .nav .nav-btn:hover {
+      background: #1a9e9e;
+      background: linear-gradient(145deg, #6ee8e8, #1a9e9e);
+      border-color: var(--accent-soft);
+      color: #071e24;
+      box-shadow: 0 6px 20px rgba(60, 212, 212, 0.4);
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.25;
+      color: #ffffff;
+      margin-bottom: 1rem;
+      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .hero p {
+      font-size: clamp(1rem, 1.5vw, 1.15rem);
+      color: var(--text-muted);
+      max-width: 720px;
+      margin: 0 auto;
+      font-weight: 350;
+      border-bottom: 2px solid var(--accent-glow);
+      display: inline-block;
+      padding-bottom: 0.75rem;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: clamp(1rem, 2.5vw, 2rem);
+      margin-bottom: 1.5rem;
+      max-width: 820px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .card {
+      background: #0d3a44;
+      background: linear-gradient(160deg, rgba(20, 80, 90, 0.7), rgba(10, 50, 58, 0.65));
+      border: 1px solid rgba(110, 232, 232, 0.2);
+      border-radius: 28px;
+      padding: clamp(1.4rem, 3vw, 2rem) clamp(1.2rem, 2.5vw, 1.8rem);
+      transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+      display: flex;
+      flex-direction: column;
+      box-shadow:
+        0 20px 40px -20px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      border-color: rgba(110, 232, 232, 0.5);
+      box-shadow:
+        0 30px 60px -20px rgba(0, 0, 0, 0.7),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        0 0 40px rgba(60, 212, 212, 0.15);
+      transform: translateY(-5px);
+    }
+
+    .card--premium {
+      border: 2px solid rgba(110, 232, 232, 0.45);
+      background: #114a54;
+      background: linear-gradient(160deg, rgba(25, 95, 105, 0.72), rgba(12, 60, 68, 0.68));
+      box-shadow:
+        0 20px 40px -20px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .card--premium:hover {
+      border-color: rgba(110, 232, 232, 0.75);
+      box-shadow:
+        0 30px 60px -20px rgba(0, 0, 0, 0.75),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 0 50px rgba(60, 212, 212, 0.18);
+    }
+
+    .card__title {
+      font-size: clamp(1.2rem, 1.8vw, 1.4rem);
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 1.25rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .card__price {
+      font-size: clamp(2.2rem, 4vw, 3rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      color: #ffffff;
+      line-height: 1.2;
+      margin-bottom: 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .card__price small {
+      font-size: 1rem;
+      font-weight: 400;
+      color: #b8dde0;
+      letter-spacing: normal;
+      margin-left: 0.25rem;
+    }
+
+    .card__features {
+      list-style: none;
+      flex: 1;
+      margin-bottom: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .card__features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      font-size: clamp(0.88rem, 1.2vw, 0.95rem);
+      color: #d4eef0;
+      padding: 0.4rem 0;
+    }
+
+    .card__features li::before {
+      content: "✓";
+      color: var(--accent-soft);
+      font-weight: 700;
+      font-size: 1rem;
+      width: 1.2rem;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .card__button {
+      display: block;
+      background: transparent;
+      border: 1.5px solid rgba(110, 232, 232, 0.4);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 0.9rem 1.5rem;
+      border-radius: 60px;
+      cursor: pointer;
+      transition: background 0.25s, color 0.25s, border-color 0.25s;
+      text-align: center;
+      width: 100%;
+      letter-spacing: 0.01em;
+      text-decoration: none;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      position: relative;
+      z-index: 1;
+    }
+
+    .card__button:hover {
+      background: #1a9e9e;
+      background: linear-gradient(145deg, #6ee8e8, #1a9e9e);
+      border-color: var(--accent-soft);
+      color: #071e24;
+      box-shadow: 0 8px 28px rgba(60, 212, 212, 0.5);
+    }
+
+    .card--premium .card__button {
+      background: transparent;
+      border-color: rgba(110, 232, 232, 0.5);
+      color: #ffffff;
+      box-shadow: none;
+    }
+
+    .card--premium .card__button:hover {
+      background: #1a9e9e;
+      background: linear-gradient(145deg, #6ee8e8, #1a9e9e);
+      border-color: var(--accent-soft);
+      color: #071e24;
+      box-shadow: 0 8px 28px rgba(60, 212, 212, 0.5);
+    }
+
+    .order-note {
+      text-align: center;
+      font-size: clamp(0.9rem, 1.3vw, 1rem);
+      color: var(--text-muted);
+      margin-bottom: 4rem;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+
+    .order-note span {
+      color: var(--accent-soft);
+      font-weight: 600;
+    }
+
+    .before-after,
+    .about,
+    .how,
+    .faq {
+      border-radius: 32px;
+      padding: clamp(1.8rem, 4vw, 2.8rem) clamp(1.2rem, 3vw, 2.5rem);
+      margin-bottom: 3rem;
+      border: 1px solid rgba(110, 232, 232, 0.18);
+      box-shadow:
+        0 20px 40px -20px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      background: #0d3540;
+      background: linear-gradient(160deg, rgba(20, 85, 95, 0.5), rgba(10, 50, 58, 0.45));
+    }
+
+    .before-after h2,
+    .about h2,
+    .faq h2 {
+      font-size: clamp(1.3rem, 2.5vw, 1.7rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .ba-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: clamp(0.75rem, 2vw, 1.5rem);
+      align-items: stretch;
+    }
+
+    .ba-item {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 20px;
+      padding: clamp(1.2rem, 2.5vw, 1.6rem);
+      border: 1px solid rgba(110, 232, 232, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .ba-item--before { border-color: rgba(255, 120, 120, 0.25); }
+    .ba-item--after {
+      border-color: rgba(110, 232, 232, 0.4);
+      background: rgba(60, 212, 212, 0.06);
+    }
+
+    .ba-item__label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .ba-item--before .ba-item__label { color: #ff9e9e; }
+    .ba-item--after .ba-item__label { color: var(--accent-soft); }
+
+    .ba-item__text {
+      font-size: clamp(0.92rem, 1.3vw, 1rem);
+      color: #d4eef0;
+      line-height: 1.55;
+    }
+
+    .ba-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: var(--accent-soft);
+      font-weight: 700;
+      padding: 0 0.25rem;
+    }
+
+    .about p {
+      font-size: clamp(0.92rem, 1.3vw, 1rem);
+      color: #d4eef0;
+      line-height: 1.7;
+      max-width: 760px;
+      margin: 0 auto 1rem;
+      text-align: center;
+    }
+
+    .about p:last-child { margin-bottom: 0; }
+
+    .how {
+      background: #0f3e48;
+      background: linear-gradient(160deg, rgba(20, 85, 95, 0.6), rgba(10, 50, 58, 0.55));
+    }
+
+    .how h2 {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+      text-align: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .how__subtitle {
+      text-align: center;
+      color: #b8dde0;
+      font-size: clamp(0.95rem, 1.3vw, 1.05rem);
+      margin-bottom: 2.5rem;
+      font-weight: 350;
+    }
+
+    .how-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: clamp(1rem, 2vw, 1.5rem);
+    }
+
+    .how-item {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: clamp(1.2rem, 2.5vw, 1.5rem) clamp(1.1rem, 2.5vw, 1.4rem);
+      border: 1px solid rgba(110, 232, 232, 0.18);
+      transition: border-color 0.25s, background 0.25s;
+    }
+
+    .how-item:hover {
+      border-color: rgba(110, 232, 232, 0.4);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .how-item h3 {
+      font-size: clamp(1rem, 1.4vw, 1.05rem);
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .how-item p {
+      font-size: clamp(0.9rem, 1.2vw, 0.95rem);
+      color: #d4eef0;
+      line-height: 1.6;
+    }
+
+    .how-item__icon {
+      width: 28px;
+      height: 28px;
+      background: rgba(110, 232, 232, 0.15);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: clamp(0.75rem, 1.5vw, 1.25rem);
+    }
+
+    .faq-item {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 16px;
+      padding: 1.1rem 1.2rem;
+      border: 1px solid rgba(110, 232, 232, 0.15);
+    }
+
+    .faq-item h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 0.35rem;
+      line-height: 1.4;
+    }
+
+    .faq-item p {
+      font-size: 0.88rem;
+      color: #b8dde0;
+      line-height: 1.55;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #4f8a8e;
+      padding-top: 2rem;
+      margin-top: 2rem;
+      border-top: 1px solid var(--accent-border);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* ===== АДАПТИВ ===== */
+    @media (max-width: 900px) {
+      .pricing-grid { max-width: 100%; gap: 1.25rem; }
+      .header { padding-bottom: 2rem; margin-bottom: 2.5rem; }
+      .hero { margin-bottom: 3rem; }
+    }
+
+    @media (max-width: 600px) {
+      .pricing-grid { grid-template-columns: 1fr; margin-bottom: 1.25rem; }
+      .header { flex-direction: column; align-items: flex-start; gap: 1rem; padding-bottom: 1.5rem; margin-bottom: 2rem; }
+      .nav { gap: 0.5rem; width: 100%; }
+      .nav .nav-btn { padding: 0.4rem 0.9rem; font-size: 0.82rem; flex: 1 1 auto; }
+      .hero { margin-bottom: 2.5rem; }
+      .hero p { display: block; border-bottom: none; padding-bottom: 0; }
+      .card__price { margin-bottom: 1.25rem; }
+      .card__features { margin-bottom: 1.5rem; }
+      .order-note { margin-bottom: 2.5rem; }
+      .before-after, .about, .how, .faq { border-radius: 24px; }
+      .ba-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+      .ba-arrow { transform: rotate(90deg); padding: 0.25rem 0; }
+      .faq, .before-after, .about { margin-bottom: 2rem; }
+    }
+
+    @media (max-width: 380px) {
+      .logo { font-size: 1.3rem; }
+      .logo-icon { width: 28px; height: 28px; font-size: 1rem; }
+      .card { border-radius: 22px; }
+      .card__button { padding: 0.8rem 1.2rem; }
+      .nav .nav-btn { padding: 0.35rem 0.75rem; font-size: 0.78rem; }
+    }
+
+    @media (min-width: 1440px) {
+      .container { max-width: 1280px; }
+      .pricing-grid { max-width: 880px; gap: 2.25rem; }
+      .card { padding: 2.2rem 2rem; }
+      .hero h1 { font-size: 3rem; }
+      .how { padding: 3.5rem 3rem; }
+    }
+
+    /* ===== ОПТИМИЗАЦИЯ ПОД СТАРЫЕ УСТРОЙСТВА ===== */
+
+    /* Устройства без hover — убираем «залипание» */
+    @media (hover: none) {
+      .card:hover,
+      .card--premium:hover {
+        border-color: rgba(110, 232, 232, 0.2);
+        box-shadow:
+          0 20px 40px -20px rgba(0, 0, 0, 0.6),
+          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        transform: none;
+      }
+      .card--premium:hover { border-color: rgba(110, 232, 232, 0.45); }
+      .card__button:hover,
+      .card--premium .card__button:hover {
+        background: transparent;
+        border-color: rgba(110, 232, 232, 0.4);
+        color: #ffffff;
+        box-shadow: none;
+      }
+      .card--premium .card__button:hover { border-color: rgba(110, 232, 232, 0.5); }
+      .nav .nav-btn:hover {
+        background: transparent;
+        border-color: rgba(110, 232, 232, 0.4);
+        color: #ffffff;
+        box-shadow: none;
+      }
+      .how-item:hover {
+        border-color: rgba(110, 232, 232, 0.18);
+        background: rgba(255, 255, 255, 0.05);
+      }
+    }
+
+    /* Отключаем анимации для тех, кто просил */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        transition: none !important;
+        animation: none !important;
+      }
+      .card:hover { transform: none; }
+    }
+
+    /* Старые браузеры без rgba() в градиентах и без grid */
+    @supports not (display: grid) {
+      .pricing-grid, .how-grid, .faq-grid, .ba-grid {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .pricing-grid .card,
+      .how-grid .how-item,
+      .faq-grid .faq-item {
+        flex: 1 1 280px;
+        margin: 0.5rem;
+      }
+      .ba-grid .ba-item { flex: 1 1 45%; }
+      .ba-grid .ba-arrow { flex: 0 0 auto; }
+    }
+
+    /* Браузеры без backdrop-filter — карточки непрозрачные, чтобы читались */
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .card { background: #0d3a44; }
+      .card--premium { background: #114a54; }
+      .before-after, .about, .how, .faq { background: #0d3540; }
+      .how-item { background: #0f3e48; }
+      .faq-item { background: #0f3e48; }
+      .ba-item { background: #0f3e48; }
+      .ba-item--after { background: #124650; }
+    }
+
+    /* Очень старые браузеры (IE11 и подобные): без гибкой сетки */
+    .no-grid .pricing-grid,
+    .no-grid .how-grid,
+    .no-grid .faq-grid {
+      display: block;
+    }
+    .no-grid .card,
+    .no-grid .how-item,
+    .no-grid .faq-item {
+      margin-bottom: 1.5rem;
+    }
+
+    body.tg-webapp {
+      padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));
+      padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    }
+    body.tg-webapp .header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+    }
+    body.tg-webapp .hero {
+      margin-bottom: 2rem;
+    }
+    body.tg-webapp .hero h1 {
+      font-size: clamp(1.5rem, 5.5vw, 2.1rem);
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-texture" aria-hidden="true"></div>
+
+  <div class="container">
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">N</span>
+        <span>NFC Отзывы</span>
+      </div>
+      <nav class="nav">
+        <a href="#how" class="nav-btn">Как это работает</a>
+        <a href="https://t.me/reviewsnfc" target="_blank" rel="noopener" class="nav-btn">Отзывы</a>
+        <a href="https://t.me/NFCmanager45" target="_blank" rel="noopener" class="nav-btn" id="contactsLink">Контакты</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <h1>NFC-метки для отзывов<br>в 2ГИС и Яндекс Картах</h1>
+      <p>А также NFC-метки для перехода в ваш канал в MAX или Telegram</p>
+    </section>
+
+    <div class="pricing-grid" id="pricing">
+      <div class="card">
+        <h2 class="card__title">Базовый</h2>
+        <div class="card__price">1 500 <small>₽</small></div>
+        <ul class="card__features">
+          <li>Быстро поднимает рейтинг магазина</li>
+          <li>Покупателям удобно оставлять отзывы</li>
+          <li>Проста в использовании для клиентов</li>
+          <li>Быстрая настройка карточки</li>
+          <li>Можно поменять ссылку</li>
+        </ul>
+        <a class="card__button" href="https://t.me/NFCmanager45" target="_blank" rel="noopener" data-plan="Базовый">Выбрать</a>
+      </div>
+
+      <div class="card card--premium">
+        <h2 class="card__title">Привилегия</h2>
+        <div class="card__price">2 500 <small>₽</small></div>
+        <ul class="card__features">
+          <li>Стильный дизайн карточки</li>
+          <li>Быстрая настройка карточки</li>
+          <li>Можно поменять ссылку</li>
+          <li>Помогает поднять рейтинг магазина</li>
+          <li>Проста в использовании для клиентов</li>
+          <li>Чип нового поколения</li>
+          <li>Большой срок службы</li>
+        </ul>
+        <a class="card__button" href="https://t.me/NFCmanager45" target="_blank" rel="noopener" data-plan="Привилегия">Выбрать</a>
+      </div>
+    </div>
+
+    <p class="order-note">Для заказа нажмите <span>«Выбрать»</span></p>
+
+    <section class="before-after">
+      <h2>До / После</h2>
+      <div class="ba-grid">
+        <div class="ba-item ba-item--before">
+          <span class="ba-item__label">Было</span>
+          <p class="ba-item__text">Клиенты забывают оставить отзыв, рейтинг стоит на месте, а новые покупатели сомневаются.</p>
+        </div>
+        <div class="ba-arrow" aria-hidden="true">→</div>
+        <div class="ba-item ba-item--after">
+          <span class="ba-item__label">Стало</span>
+          <p class="ba-item__text">Одно касание телефоном — и отзыв готов. Рейтинг растёт, доверие покупателей крепнет.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="about">
+      <h2>О нас</h2>
+      <p>Мы — небольшая команда, которая помогает магазинам получать больше отзывов без сложных настроек и лишних затрат. Делаем NFC-метки, которые работают сразу и понятны каждому клиенту.</p>
+      <p>Наша цель — чтобы у малого бизнеса был простой инструмент для роста рейтинга и доверия. Без воды, без сложных интеграций и без долгих ожиданий.</p>
+    </section>
+
+    <section class="how" id="how">
+      <h2>Как это работает</h2>
+      <p class="how__subtitle">Чем NFC-метка поможет вашему бизнесу</p>
+      <div class="how-grid">
+        <div class="how-item">
+          <h3><span class="how-item__icon">📈</span> Растёт рейтинг</h3>
+          <p>Одно касание телефоном — и покупатель сразу попадает на форму отзыва в 2ГИС или Яндекс Картах. Больше отзывов — выше рейтинг магазина.</p>
+        </div>
+        <div class="how-item">
+          <h3><span class="how-item__icon">🤝</span> Больше доверия</h3>
+          <p>Живые отзывы подтверждают, что магазином пользуются реальные люди. Для малого бизнеса это весомый аргумент в пользу покупки.</p>
+        </div>
+        <div class="how-item">
+          <h3><span class="how-item__icon">💬</span> Удобно клиентам</h3>
+          <p>Не нужно искать магазин в приложении — достаточно поднести телефон. Меньше шагов, выше отклик и больше обратной связи.</p>
+        </div>
+        <div class="how-item">
+          <h3><span class="how-item__icon">📡</span> Канал MAX или Telegram</h3>
+          <p>Та же метка может вести не на отзыв, а в ваш канал в MAX или Telegram — удобно для акций, новостей и повторных продаж.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq">
+      <h2>Частые вопросы</h2>
+      <div class="faq-grid">
+        <div class="faq-item">
+          <h3>А если у клиента нет NFC?</h3>
+          <p>Метка работает и по QR-коду — покупатель просто наводит камеру телефона. QR можно разместить рядом с меткой.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Сколько живёт метка?</h3>
+          <p>NFC-метка не требует питания и служит годами. Она не боится влаги и перепадов температуры — подходит для витрины и кассы.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Можно ли поменять ссылку?</h3>
+          <p>Да, ссылку можно перенастроить в любой момент — например, если вы переезжаете или меняете канал. Это доступно в обоих тарифах.</p>
+        </div>
+        <div class="faq-item">
+          <h3>Как быстро подключите?</h3>
+          <p>Настройка сразу на месте — без ожидания. Мы поможем выбрать место для метки и оформим её так, чтобы клиенты точно заметили.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      © 2026 NFC Отзывы — NFC-метки для 2ГИС, Яндекс Карт, MAX и Telegram. Все цены указаны в рублях.
+    </footer>
+  </div>
+
+  <script>
+    (function() {
+      // Определяем очень старые браузеры и упрощаем сетку
+      try {
+        var supportsGrid = CSS && CSS.supports && CSS.supports('display', 'grid');
+        if (!supportsGrid) {
+          document.body.classList.add('no-grid');
+        }
+      } catch (e) {}
+
+      /* ---------- Telegram WebApp (если поддерживается) ---------- */
+      var tg = window.Telegram && window.Telegram.WebApp;
+
+      if (tg && tg.initData !== undefined) {
+        document.body.classList.add('tg-webapp');
+        if (tg.ready) tg.ready();
+        if (tg.expand) tg.expand();
+        if (tg.setHeaderColor) tg.setHeaderColor('#071e24');
+        if (tg.setBackgroundColor) tg.setBackgroundColor('#071e24');
+        if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+
+        // Все ссылки на t.me — внутри Telegram
+        var links = document.querySelectorAll('a[href^="https://t.me/"]');
+        for (var i = 0; i < links.length; i++) {
+          (function(link) {
+            link.addEventListener('click', function(e) {
+              if (tg.openTelegramLink) {
+                e.preventDefault();
+                tg.openTelegramLink(link.href);
+              }
+            });
+          })(links[i]);
+        }
+
+        // Кнопки «Выбрать» — с предзаполненным сообщением
+        var buttons = document.querySelectorAll('.card__button');
+        for (var j = 0; j < buttons.length; j++) {
+          (function(btn) {
+            btn.addEventListener('click', function(e) {
+              var plan = btn.getAttribute('data-plan') || '';
+              var username = 'NFCmanager45';
+              var text = encodeURIComponent('Здравствуйте! Хочу заказать NFC-метку «' + plan + '».');
+              if (tg.openTelegramLink) {
+                e.preventDefault();
+                tg.openTelegramLink('https://t.me/' + username + '?text=' + text);
+              }
+            });
+          })(buttons[j]);
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
